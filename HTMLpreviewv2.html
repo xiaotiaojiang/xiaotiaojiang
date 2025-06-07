@@ -20,6 +20,7 @@
         /* 编辑器样式 */
         .editor-wrapper {
             position: relative;
+            height: calc(100% - 40px);
         }
         
         #editor-html, #editor-css, #editor-js, #highlightContent {
@@ -43,7 +44,7 @@
             z-index: 2;
         }
         
-        #highlightContent {
+        #highlightContent-html, #highlightContent-css, #highlightContent-js {
             pointer-events: none;
             z-index: 1;
             overflow-y: auto;
@@ -98,32 +99,146 @@
 
         .editor-area {
             display: none;
-            height: calc(100% - 40px);
+            height: 100%;
         }
 
         .editor-area.active {
             display: block;
         }
+
+        /* 按钮样式 */
+        .action-button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .action-button:hover {
+            background-color: #2563eb;
+        }
+
+        /* 布局样式 */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .content-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .editor-container {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+        }
+
+    .preview-container {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .preview-frame-container {
+        position: relative;
+        width: 100%;
+        padding-top: 56.25%; /* 16:9 比例 */
+    }
+
+    .preview-frame {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 0.375rem;
+    }
+
+    .chat-container {
+        flex: 1;
+        min-height: 300px;
+        border-radius: 0.375rem;
+        overflow: hidden;
+    }
+
+    /* 文本区域高度限制滑块样式 */
+    .editor-height-control {
+        width: 100%;
+        padding: 0.5rem;
+        background: #2d2d2d;
+        border-top: 1px solid #404040;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .editor-height-slider {
+        flex: 1;
+        height: 4px;
+        -webkit-appearance: none;
+        background: #404040;
+        border-radius: 2px;
+        outline: none;
+    }
+
+    .editor-height-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        background: #3b82f6;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .editor-height-slider::-webkit-slider-thumb:hover {
+        background: #2563eb;
+    }
+
+    .editor-height-value {
+        min-width: 4rem;
+        color: #9ca3af;
+        font-size: 0.875rem;
+    }
+</style>
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100">
-    <div class="container mx-auto p-4">
-        <header class="mb-4">
-            <h1 class="text-2xl font-bold text-blue-400">HTML实时编辑器</h1>
-            <p class="text-gray-400">支持代码高亮和Tailwind CSS</p>
-        </header>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[80vh]">
-            <!-- 编辑区 -->
-            <div class="bg-gray-800 rounded-lg p-4">
-                <h2 class="text-xl font-semibold mb-2 text-blue-300">编辑区</h2>
-                <div class="flex space-x-2 mb-2">
-                    <div class="tab active" data-tab="html">HTML</div>
-                    <div class="tab" data-tab="css">CSS</div>
-                    <div class="tab" data-tab="js">JavaScript</div>
+    <div class="main-container">
+        <!-- 顶部工具栏 -->
+        <div class="p-4 bg-gray-800 border-b border-gray-700">
+            <div class="container mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-xl font-bold text-blue-400">HTML实时编辑器</h1>
+                    <button id="open-file" class="action-button">
+                        打开文件
+                    </button>
+                    <button id="save-file" class="action-button">
+                        保存文件
+                    </button>
                 </div>
+                <p class="text-gray-400">支持代码高亮和Tailwind CSS</p>
+            </div>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="content-container">
+            <!-- 编辑区 -->
+            <div class="editor-container bg-gray-800 p-4">
+    <div class="flex space-x-2 mb-2">
+        <div class="tab active" data-tab="html">HTML</div>
+        <div class="tab" data-tab="css">CSS</div>
+        <div class="tab" data-tab="js">JavaScript</div>
+    </div>
                 
-                <div class="editor-wrapper h-[calc(100%-40px)] relative rounded bg-[#1e1e1e]">
+                <div class="editor-wrapper rounded bg-[#1e1e1e]">
                     <div id="html-area" class="editor-area active">
                         <textarea id="editor-html" class="focus:outline-none" spellcheck="false"><!DOCTYPE html>
 <html lang="zh-CN">
@@ -185,13 +300,32 @@ document.getElementById('demo-btn').addEventListener('click', function() {
                         <pre id="highlightContent-js" class="language-javascript"><code class="language-javascript"></code></pre>
                     </div>
                 </div>
+                    <div class="editor-height-control">
+        <span class="text-sm text-gray-400">编辑器高度:</span>
+        <input type="range" 
+               class="editor-height-slider" 
+               min="200" 
+               max="2000" 
+               value="500" 
+               id="editorHeightSlider">
+        <span class="editor-height-value" id="editorHeightValue">500px</span>
+    </div>
+
             </div>
 
             <!-- 预览区 -->
-            <div class="bg-white rounded-lg p-4">
-                <h2 id="previewTitle" class="text-xl font-semibold mb-2 text-gray-800">预览区 - Tailwind示例</h2>
-                <iframe id="preview" class="w-full h-[calc(100%-40px)] bg-white rounded border-none"></iframe>
-            </div>
+<div class="preview-container bg-white p-4">
+    <h2 id="previewTitle" class="text-xl font-semibold mb-2 text-gray-800">预览区 - Tailwind示例</h2>
+    <div class="preview-frame-container">
+        <iframe id="preview" class="preview-frame bg-white"></iframe>
+    </div>
+    <div class="chat-container">
+        <iframe src="https://chat.baidu.com/" 
+                class="w-full h-full border-none">
+        </iframe>
+    </div>
+</div>
+
         </div>
     </div>
 
@@ -212,6 +346,8 @@ document.getElementById('demo-btn').addEventListener('click', function() {
         const previewTitle = document.getElementById('previewTitle');
         const tabs = document.querySelectorAll('.tab');
         const editorAreas = document.querySelectorAll('.editor-area');
+        const saveButton = document.getElementById('save-file');
+        const openButton = document.getElementById('open-file');
 
         // 添加防抖函数
         function debounce(func, wait) {
@@ -282,6 +418,63 @@ document.getElementById('demo-btn').addEventListener('click', function() {
             });
         });
 
+        // 保存文件功能
+        saveButton.addEventListener('click', () => {
+            try {
+                const htmlBlob = new Blob([htmlEditor.value], { type: 'text/html' });
+                const cssBlob = new Blob([cssEditor.value], { type: 'text/css' });
+                const jsBlob = new Blob([jsEditor.value], { type: 'text/javascript' });
+                
+                // 创建下载链接并触发点击
+                const htmlLink = document.createElement('a');
+                htmlLink.href = URL.createObjectURL(htmlBlob);
+                htmlLink.download = 'index.html';
+                htmlLink.click();
+                
+                const cssLink = document.createElement('a');
+                cssLink.href = URL.createObjectURL(cssBlob);
+                cssLink.download = 'styles.css';
+                cssLink.click();
+                
+                const jsLink = document.createElement('a');
+                jsLink.href = URL.createObjectURL(jsBlob);
+                jsLink.download = 'script.js';
+                jsLink.click();
+            } catch (error) {
+                console.error('保存文件时发生错误:', error);
+                alert('保存文件失败，请重试');
+            }
+        });
+
+        // 打开文件功能
+        openButton.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.html,.css,.js';
+            input.multiple = true;
+            
+            input.onchange = async (e) => {
+                try {
+                    for (const file of e.target.files) {
+                        const text = await file.text();
+                        if (file.name.endsWith('.html')) {
+                            htmlEditor.value = text;
+                        } else if (file.name.endsWith('.css')) {
+                            cssEditor.value = text;
+                        } else if (file.name.endsWith('.js')) {
+                            jsEditor.value = text;
+                        }
+                    }
+                    update();
+                } catch (error) {
+                    console.error('读取文件时发生错误:', error);
+                    alert('读取文件失败，请重试');
+                }
+            };
+            
+            input.click();
+        });
+
         // 事件监听
         htmlEditor.addEventListener('input', update);
         cssEditor.addEventListener('input', update);
@@ -310,6 +503,18 @@ document.getElementById('demo-btn').addEventListener('click', function() {
                 console.error('CDN资源加载失败:', e);
             }
         }, true);
+            const heightSlider = document.getElementById('editorHeightSlider');
+    const heightValue = document.getElementById('editorHeightValue');
+    const editorWrapper = document.querySelector('.editor-wrapper');
+
+    heightSlider.addEventListener('input', function() {
+        const height = this.value;
+        editorWrapper.style.height = `${height}px`;
+        heightValue.textContent = `${height}px`;
+    });
+
+    // 初始化编辑器高度
+    editorWrapper.style.height = `${heightSlider.value}px`;
     </script>
 </body>
 </html>
