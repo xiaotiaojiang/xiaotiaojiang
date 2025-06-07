@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线代码编辑器</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .editor-container, .preview-container {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-header, .preview-header {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            font-weight: bold;
+        }
+        
+        .code-editor {
+            flex: 1;
+            border: none;
+            resize: none;
+            padding: 10px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            background-color: #f5f5f5;
+        }
+        
+        .preview-frame {
+            flex: 1;
+            border: none;
+            background-color: white;
+        }
+        
+        .resizer {
+            width: 10px;
+            background-color: #ddd;
+            cursor: col-resize;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: #444;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            color: white;
+            cursor: pointer;
+            background-color: #555;
+            margin-right: 2px;
+        }
+        
+        .tab.active {
+            background-color: #333;
+        }
+        
+        .editor-area {
+            display: none;
+            flex: 1;
+        }
+        
+        .editor-area.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <div class="tabs">
+            <div class="tab active" data-tab="html">HTML</div>
+            <div class="tab" data-tab="css">CSS</div>
+            <div class="tab" data-tab="js">JavaScript</div>
+        </div>
+        
+        <div id="html-editor" class="editor-area active">
+            <div class="editor-header">HTML 编辑器</div>
+            <textarea id="html-code" class="code-editor" placeholder="在此输入HTML代码...">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;我的网页&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h5&gt; power by 田悠汗&lt;/h5&gt;
+    &lt;h1&gt;欢迎使用在线编辑器&lt;/h1&gt;
+    &lt;p&gt;编辑左侧代码，右侧会实时显示效果&lt;/p&gt;
+    &lt;button id="demo-btn"&gt;点击我&lt;/button&gt;
+&lt;/body&gt;
+&lt;/html&gt;</textarea>
+        </div>
+        
+        <div id="css-editor" class="editor-area">
+            <div class="editor-header">CSS 编辑器</div>
+            <textarea id="css-code" class="code-editor" placeholder="在此输入CSS代码...">body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+h1 {
+    color: #4285f4;
+}
+
+#demo-btn {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#demo-btn:hover {
+    background-color: #3367d6;
+}</textarea>
+        </div>
+        
+        <div id="js-editor" class="editor-area">
+            <div class="editor-header">JavaScript 编辑器</div>
+            <textarea id="js-code" class="code-editor" placeholder="在此输入JavaScript代码...">document.getElementById('demo-btn').addEventListener('click', function() {
+    alert('按钮被点击了！');
+});</textarea>
+        </div>
+    </div>
+    
+    <div class="resizer" id="resizer"></div>
+    
+    <div class="preview-container">
+        <div class="preview-header">实时预览</div>
+        <iframe id="preview" class="preview-frame"></iframe>
+    </div>
+
+    <script>
+               const htmlCode = document.getElementById('html-code');
+        const cssCode = document.getElementById('css-code');
+        const jsCode = document.getElementById('js-code');
+        const preview = document.getElementById('preview');
+        const tabs = document.querySelectorAll('.tab');
+        const editorAreas = document.querySelectorAll('.editor-area');
+        const resizer = document.getElementById('resizer');
+        
+        // 初始化预览
+        function updatePreview() {
+            const html = htmlCode.value;
+            const css = cssCode.value;
+            const js = jsCode.value;
+            
+            const previewDoc = preview.contentDocument || preview.contentWindow.document;
+            
+            previewDoc.open();
+            previewDoc.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>${css}</style>
+                </head>
+                <body>
+                    ${html}
+                    <script>${js}<\/script>
+                </body>
+                </html>
+            `);
+            previewDoc.close();
+        }
+        
+        // 添加事件监听器
+        htmlCode.addEventListener('input', updatePreview);
+        cssCode.addEventListener('input', updatePreview);
+        jsCode.addEventListener('input', updatePreview);
+        
+        // 标签切换
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const tabName = tab.getAttribute('data-tab');
+                editorAreas.forEach(area => {
+                    area.classList.remove('active');
+                    if (area.id === `${tabName}-editor`) {
+                        area.classList.add('active');
+                    }
+                });
+            });
+        });
+        
+        // 可调整大小的分隔条
+        let isResizing = false;
+        
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const container = document.querySelector('.editor-container');
+            const containerWidth = window.innerWidth;
+            const newWidth = (e.clientX / containerWidth) * 100;
+            
+            container.style.flex = `0 0 ${newWidth}%`;
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = '';
+        });
+        
+        // 初始化预览
+        window.addEventListener('load', updatePreview);        
+
+</script>
+</body>
+</html>
+
