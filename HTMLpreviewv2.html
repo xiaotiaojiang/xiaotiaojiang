@@ -1,367 +1,157 @@
-<!DOCTYPE html>
-
-<html lang="zh-CN">
-
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>HTML实时编辑器 - 支持代码高亮和Tailwind</title>
-
-    
-
-    <!-- Tailwind CSS CDN -->
-
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    
-
-    <!-- Prism CSS -->
-
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
-
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
-
-    
-
-    <style>
-
-        .editor-wrapper {
-
-            position: relative;
-
-        }
-
-        
-
-        #editor, #highlightContent {
-
-            position: absolute;
-
-            top: 0;
-
-            left: 0;
-
-            width: 100%;
-
-            height: 100%;
-
-            padding: 1rem;
-
-            font-family: 'Fira Code', monospace;
-
-            font-size: 14px;
-
-            line-height: 1.5;
-
-            tab-size: 4;
-
-        }
-
-        
-
-        #editor {
-
-            color: transparent;
-
-            background: transparent;
-
-            caret-color: #fff;
-
-            resize: none;
-
-            z-index: 2;
-
-        }
-
-        
-
-        #highlightContent {
-
-            pointer-events: none;
-
-            z-index: 1;
-
-            overflow-y: auto;
-
-            background-color: #1e1e1e !important;
-
-        }
-
-        / 提高代码可见度的样式 /
-
-        .token.tag {
-
-            color: #ff99c8 !important;
-
-        }
-
-        
-
-        .token.attr-name {
-
-            color: #9fff9c !important;
-
-        }
-
-        
-
-        .token.attr-value {
-
-            color: #ffd93d !important;
-
-        }
-
-        
-
-        .token.string {
-
-            color: #87ceeb !important;
-
-        }
-
-        
-
-        .token.comment {
-
-            color: #6a9955 !important;
-
-        }
-
-        .token.doctype {
-
-            color: #ff99c8 !important;
-
-        }
-
-        
-
-        / 自定义滚动条样式 /
-
-        ::-webkit-scrollbar {
-
-            width: 8px;
-
-            height: 8px;
-
-        }
-
-        
-
-        ::-webkit-scrollbar-track {
-
-            background: #2d2d2d;
-
-        }
-
-        
-
-        ::-webkit-scrollbar-thumb {
-
-            background: #666;
-
-            border-radius: 4px;
-
-        }
-
-        
-
-        ::-webkit-scrollbar-thumb:hover {
-
-            background: #888;
-
-        }
-
-        / 选中文本的背景色 /
-
-        #editor::selection {
-
-            background: rgba(255, 255, 255, 0.2);
-
-        }
-
-    </style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML实时编辑器 - 支持代码高亮和Tailwind</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
+    
+    <!-- Prism CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" 
+          rel="stylesheet" 
+          crossorigin="anonymous" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" 
+          rel="stylesheet" 
+          crossorigin="anonymous" />
+    
+    <style>
+        /* 编辑器样式 */
+        .editor-wrapper {
+            position: relative;
+        }
+        
+        #editor, #highlightContent {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            tab-size: 4;
+        }
+        
+        #editor {
+            color: transparent;
+            background: transparent;
+            caret-color: #fff;
+            resize: none;
+            z-index: 2;
+        }
+        
+        #highlightContent {
+            pointer-events: none;
+            z-index: 1;
+            overflow-y: auto;
+            background-color: #1e1e1e !important;
+        }
+
+        /* 提高代码可见度的样式 */
+        .token.tag { color: #ff99c8 !important; }
+        .token.attr-name { color: #9fff9c !important; }
+        .token.attr-value { color: #ffd93d !important; }
+        .token.string { color: #87ceeb !important; }
+        .token.comment { color: #6a9955 !important; }
+        .token.doctype { color: #ff99c8 !important; }
+        
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #888;
+        }
+
+        /* 选中文本的背景色 */
+        #editor::selection {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
 </head>
+<body class="bg-gray-900 text-gray-100">
+    <!-- 其余代码保持不变 -->
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const highlightContent = document.querySelector('#highlightContent code');
+        const previewTitle = document.getElementById('previewTitle');
 
-<body class="bg-gray-900 text-gray-100">
+        // 添加防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
 
-    <div class="container mx-auto p-4">
+        // 更新预览和代码高亮
+        const update = debounce(() => {
+            try {
+                const code = editor.value;
+                
+                // 更新代码高亮
+                highlightContent.textContent = code;
+                Prism.highlightElement(highlightContent);
+                
+                // 更新预览
+                const previewDoc = preview.contentDocument || preview.contentWindow.document;
+                previewDoc.open();
+                previewDoc.write(code);
+                previewDoc.close();
+                
+                // 更新预览区标题
+                const titleMatch = code.match(/<title>(.*?)<\/title>/i);
+                const pageTitle = titleMatch ? titleMatch[1] : "未命名页面";
+                previewTitle.textContent = `预览区 - ${pageTitle}`;
+            } catch (error) {
+                console.error('更新预览时发生错误:', error);
+            }
+        }, 300);
 
-        <header class="mb-4">
+        // 事件监听
+        editor.addEventListener('input', update);
+        
+        // 处理Tab键
+        editor.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+                update();
+            }
+        });
 
-            <h1 class="text-2xl font-bold text-blue-400">HTML实时编辑器</h1>
+        // 初始化
+        window.addEventListener('load', update);
 
-            <p class="text-gray-400">支持代码高亮和Tailwind CSS</p>
-
-        </header>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[80vh]">
-
-            <!-- 编辑区 -->
-
-            <div class="bg-gray-800 rounded-lg p-4">
-
-                <h2 class="text-xl font-semibold mb-2 text-blue-300">编辑区</h2>
-
-                <div class="editor-wrapper h-[calc(100%-40px)] relative rounded bg-[#1e1e1e]">
-
-                    <textarea id="editor" class="focus:outline-none" spellcheck="false"
-
-                    ><!DOCTYPE html>
-
-<html lang="zh-CN">
-
-<head>
-
-    <meta charset="UTF-8">
-
-    <title>Tailwind示例</title>
-
-</head>
-
-<body>
-
-    <!-- 这是一个使用Tailwind的示例 -->
-
-    <div class="container mx-auto p-4">
-
-        <h1 class="text-3xl font-bold text-blue-500">
-
-            你好，世界！
-
-        </h1>
-
-        <p class="mt-4 text-gray-600">
-
-            这是一个使用Tailwind CSS的演示页面
-
-        </p>
-
-        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-
-            点击我
-
-        </button>
-
-    </div>
-
+        // 错误处理
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'SCRIPT') {
+                console.error('CDN资源加载失败:', e);
+            }
+        }, true);
+    </script>
 </body>
-
-</html></textarea>
-
-                    <pre id="highlightContent" class="language-html" aria-hidden="true"><code class="language-html"></code></pre>
-
-                </div>
-
-            </div>
-
-            <!-- 预览区 -->
-
-            <div class="bg-white rounded-lg p-4">
-
-                <h2 id="previewTitle" class="text-xl font-semibold mb-2 text-gray-800">预览区 - Tailwind示例</h2>
-
-                <iframe id="preview" class="w-full h-[calc(100%-40px)] bg-white rounded border-none"></iframe>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- Prism.js -->
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
-
-    <script>
-
-        const editor = document.getElementById('editor');
-
-        const preview = document.getElementById('preview');
-
-        const highlightContent = document.querySelector('#highlightContent code');
-
-        const previewTitle = document.getElementById('previewTitle');
-
-        // 同步滚动
-
-        editor.addEventListener('scroll', () => {
-
-            highlightContent.parentElement.scrollTop = editor.scrollTop;
-
-            highlightContent.parentElement.scrollLeft = editor.scrollLeft;
-
-        });
-
-        // 更新预览和代码高亮
-
-        function update() {
-
-            // 更新代码高亮
-
-            const code = editor.value;
-
-            highlightContent.textContent = code;
-
-            Prism.highlightElement(highlightContent);
-
-            // 更新预览
-
-            const previewDoc = preview.contentDocument || preview.contentWindow.document;
-
-            previewDoc.open();
-
-            previewDoc.write(code);
-
-            previewDoc.close();
-
-            // 更新预览区标题
-
-            const titleMatch = code.match(/<title>(.*?)<\/title>/i);
-
-            const pageTitle = titleMatch ? titleMatch[1] : "未命名页面";
-
-            previewTitle.textContent = `预览区 - ${pageTitle}`;
-
-        }
-
-        // 实时更新
-
-        editor.addEventListener('input', update);
-
-        // 初始化
-
-        update();
-
-        // 处理Tab键
-
-        editor.addEventListener('keydown', function(e) {
-
-            if (e.key === 'Tab') {
-
-                e.preventDefault();
-
-                const start = this.selectionStart;
-
-                const end = this.selectionEnd;
-
-                this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
-
-                this.selectionStart = this.selectionEnd = start + 4;
-
-                update();
-
-            }
-
-        });
-
-    </script>
-
-</body>
-
 </html>
