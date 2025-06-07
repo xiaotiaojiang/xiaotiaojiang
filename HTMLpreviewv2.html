@@ -23,32 +23,52 @@
             height: calc(100% - 40px);
         }
         
-        #editor-html, #editor-css, #editor-js, #highlightContent {
+        /* 编辑器和高亮显示层的基础样式 */
+        #editor-html, #editor-css, #editor-js, 
+        #highlightContent-html, #highlightContent-css, #highlightContent-js {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            padding: 1rem;
             font-family: 'Fira Code', monospace;
             font-size: 14px;
             line-height: 1.5;
             tab-size: 4;
+            white-space: pre;
+            word-wrap: normal;
+            padding: 1rem !important;
+            margin: 0;
+            box-sizing: border-box;
+            letter-spacing: normal;
         }
         
+        /* 编辑器特定样式 */
         #editor-html, #editor-css, #editor-js {
             color: transparent;
             background: transparent;
             caret-color: #fff;
             resize: none;
             z-index: 2;
+            -webkit-text-fill-color: transparent;
         }
         
+        /* 高亮显示层特定样式 */
         #highlightContent-html, #highlightContent-css, #highlightContent-js {
             pointer-events: none;
             z-index: 1;
-            overflow-y: auto;
             background-color: #1e1e1e !important;
+        }
+
+        /* 高亮代码块样式重置 */
+        #highlightContent-html code, 
+        #highlightContent-css code, 
+        #highlightContent-js code {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: none !important;
+            white-space: pre;
+            display: block;
         }
 
         /* 提高代码可见度的样式 */
@@ -338,27 +358,14 @@
                 
                 <div class="editor-wrapper rounded bg-[#1e1e1e]">
                     <div id="html-area" class="editor-area active">
-                        <textarea id="editor-html" class="focus:outline-none" spellcheck="false"><!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>Tailwind示例</title>
-</head>
-<body>
-    <!-- 这是一个使用Tailwind的示例 -->
-    <div class="container mx-auto p-4">
-        <h1 class="text-3xl font-bold text-blue-500">
-            你好，世界！
-        </h1>
-        <p class="mt-4 text-gray-600">
-            这是一个使用Tailwind CSS的演示页面
-        </p>
-        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-            点击我
-        </button>
-    </div>
-</body>
-</html></textarea>
+                        <textarea id="editor-html" 
+    class="focus:outline-none" 
+    spellcheck="false"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="off"
+    wrap="off"
+></textarea>
                         <pre id="highlightContent-html" class="language-html"><code class="language-html"></code></pre>
                     </div>
 
@@ -574,6 +581,46 @@ document.getElementById('demo-btn').addEventListener('click', function() {
             
             input.click();
         });
+
+        // 同步滚动
+        function syncScroll(editor) {
+            const highlightContent = editor.nextElementSibling;
+            highlightContent.scrollTop = editor.scrollTop;
+            highlightContent.scrollLeft = editor.scrollLeft;
+        }
+
+        [htmlEditor, cssEditor, jsEditor].forEach(editor => {
+            // 同步滚动
+            editor.addEventListener('scroll', function() {
+                syncScroll(this);
+            });
+
+            // 处理粘贴事件
+            editor.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const text = e.clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+            });
+
+            // 优化输入处理
+            editor.addEventListener('input', function() {
+                requestAnimationFrame(() => {
+                    syncScroll(this);
+                    update();
+                });
+            });
+        });
+
+        // 初始化编辑器状态
+        function initializeEditors() {
+            [htmlEditor, cssEditor, jsEditor].forEach(editor => {
+                syncScroll(editor);
+                update();
+            });
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', initializeEditors);
 
         // 事件监听
         htmlEditor.addEventListener('input', update);
