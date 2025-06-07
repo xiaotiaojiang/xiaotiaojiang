@@ -22,7 +22,7 @@
             position: relative;
         }
         
-        #editor, #highlightContent {
+        #editor-html, #editor-css, #editor-js, #highlightContent {
             position: absolute;
             top: 0;
             left: 0;
@@ -35,7 +35,7 @@
             tab-size: 4;
         }
         
-        #editor {
+        #editor-html, #editor-css, #editor-js {
             color: transparent;
             background: transparent;
             caret-color: #fff;
@@ -78,18 +78,140 @@
         }
 
         /* 选中文本的背景色 */
-        #editor::selection {
+        #editor-html::selection, #editor-css::selection, #editor-js::selection {
             background: rgba(255, 255, 255, 0.2);
+        }
+
+        .tab {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem 0.375rem 0 0;
+            background-color: #374151;
+            color: #9ca3af;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+
+        .editor-area {
+            display: none;
+            height: calc(100% - 40px);
+        }
+
+        .editor-area.active {
+            display: block;
         }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100">
-    <!-- 其余代码保持不变 -->
+    <div class="container mx-auto p-4">
+        <header class="mb-4">
+            <h1 class="text-2xl font-bold text-blue-400">HTML实时编辑器</h1>
+            <p class="text-gray-400">支持代码高亮和Tailwind CSS</p>
+        </header>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[80vh]">
+            <!-- 编辑区 -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h2 class="text-xl font-semibold mb-2 text-blue-300">编辑区</h2>
+                <div class="flex space-x-2 mb-2">
+                    <div class="tab active" data-tab="html">HTML</div>
+                    <div class="tab" data-tab="css">CSS</div>
+                    <div class="tab" data-tab="js">JavaScript</div>
+                </div>
+                
+                <div class="editor-wrapper h-[calc(100%-40px)] relative rounded bg-[#1e1e1e]">
+                    <div id="html-area" class="editor-area active">
+                        <textarea id="editor-html" class="focus:outline-none" spellcheck="false"><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Tailwind示例</title>
+</head>
+<body>
+    <!-- 这是一个使用Tailwind的示例 -->
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-blue-500">
+            你好，世界！
+        </h1>
+        <p class="mt-4 text-gray-600">
+            这是一个使用Tailwind CSS的演示页面
+        </p>
+        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            点击我
+        </button>
+    </div>
+</body>
+</html></textarea>
+                        <pre id="highlightContent-html" class="language-html"><code class="language-html"></code></pre>
+                    </div>
+
+                    <div id="css-area" class="editor-area">
+                        <textarea id="editor-css" class="focus:outline-none" spellcheck="false">/* 自定义样式 */
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+h1 {
+    color: #4285f4;
+}
+
+button {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #3367d6;
+}</textarea>
+                        <pre id="highlightContent-css" class="language-css"><code class="language-css"></code></pre>
+                    </div>
+
+                    <div id="js-area" class="editor-area">
+                        <textarea id="editor-js" class="focus:outline-none" spellcheck="false">// 点击按钮事件
+document.getElementById('demo-btn').addEventListener('click', function() {
+    alert('按钮被点击了！');
+});</textarea>
+                        <pre id="highlightContent-js" class="language-javascript"><code class="language-javascript"></code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 预览区 -->
+            <div class="bg-white rounded-lg p-4">
+                <h2 id="previewTitle" class="text-xl font-semibold mb-2 text-gray-800">预览区 - Tailwind示例</h2>
+                <iframe id="preview" class="w-full h-[calc(100%-40px)] bg-white rounded border-none"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prism.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+
     <script>
-        const editor = document.getElementById('editor');
+        const htmlEditor = document.getElementById('editor-html');
+        const cssEditor = document.getElementById('editor-css');
+        const jsEditor = document.getElementById('editor-js');
         const preview = document.getElementById('preview');
-        const highlightContent = document.querySelector('#highlightContent code');
+        const highlightHtml = document.querySelector('#highlightContent-html code');
+        const highlightCss = document.querySelector('#highlightContent-css code');
+        const highlightJs = document.querySelector('#highlightContent-js code');
         const previewTitle = document.getElementById('previewTitle');
+        const tabs = document.querySelectorAll('.tab');
+        const editorAreas = document.querySelectorAll('.editor-area');
 
         // 添加防抖函数
         function debounce(func, wait) {
@@ -107,20 +229,38 @@
         // 更新预览和代码高亮
         const update = debounce(() => {
             try {
-                const code = editor.value;
+                const htmlCode = htmlEditor.value;
+                const cssCode = cssEditor.value;
+                const jsCode = jsEditor.value;
                 
                 // 更新代码高亮
-                highlightContent.textContent = code;
-                Prism.highlightElement(highlightContent);
+                highlightHtml.textContent = htmlCode;
+                highlightCss.textContent = cssCode;
+                highlightJs.textContent = jsCode;
+                
+                Prism.highlightElement(highlightHtml);
+                Prism.highlightElement(highlightCss);
+                Prism.highlightElement(highlightJs);
                 
                 // 更新预览
                 const previewDoc = preview.contentDocument || preview.contentWindow.document;
                 previewDoc.open();
-                previewDoc.write(code);
+                previewDoc.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>${cssCode}</style>
+                    </head>
+                    <body>
+                        ${htmlCode}
+                        <script>${jsCode}<\/script>
+                    </body>
+                    </html>
+                `);
                 previewDoc.close();
                 
                 // 更新预览区标题
-                const titleMatch = code.match(/<title>(.*?)<\/title>/i);
+                const titleMatch = htmlCode.match(/<title>(.*?)<\/title>/i);
                 const pageTitle = titleMatch ? titleMatch[1] : "未命名页面";
                 previewTitle.textContent = `预览区 - ${pageTitle}`;
             } catch (error) {
@@ -128,19 +268,37 @@
             }
         }, 300);
 
+        // 标签切换功能
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // 移除所有标签和编辑区的active类
+                tabs.forEach(t => t.classList.remove('active'));
+                editorAreas.forEach(area => area.classList.remove('active'));
+                
+                // 添加active类到当前标签和对应的编辑区
+                tab.classList.add('active');
+                const areaId = `${tab.getAttribute('data-tab')}-area`;
+                document.getElementById(areaId).classList.add('active');
+            });
+        });
+
         // 事件监听
-        editor.addEventListener('input', update);
+        htmlEditor.addEventListener('input', update);
+        cssEditor.addEventListener('input', update);
+        jsEditor.addEventListener('input', update);
         
         // 处理Tab键
-        editor.addEventListener('keydown', function(e) {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const start = this.selectionStart;
-                const end = this.selectionEnd;
-                this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
-                this.selectionStart = this.selectionEnd = start + 4;
-                update();
-            }
+        [htmlEditor, cssEditor, jsEditor].forEach(editor => {
+            editor.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+                    this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                    this.selectionStart = this.selectionEnd = start + 4;
+                    update();
+                }
+            });
         });
 
         // 初始化
