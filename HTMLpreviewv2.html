@@ -262,6 +262,93 @@
       });
       update();
     });
+       const createHtmlTemplate = (type = 'basic') => {
+      const templates = {
+        basic: `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的网页</title>
+</head>
+<body>
+    
+</body>
+</html>`,
+        tailwind: `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tailwind 项目</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-900">
+            Hello, Tailwind!
+        </h1>
+    </div>
+</body>
+</html>`,
+      };
+      return templates[type] || templates.basic;
+    };
+
+    // 快捷键处理
+    let exclamationCount = 0;
+    let lastExclamationTime = 0;
+    const TRIPLE_CLICK_THRESHOLD = 1000; // 三连击的时间阈值（毫秒）
+
+    [htmlEditor, cssEditor, jsEditor].forEach(editor => {
+      editor.addEventListener('keydown', function(e) {
+        // 原有的 Tab 键处理...
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = this.selectionStart;
+          const end = this.selectionEnd;
+          this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+          this.selectionStart = this.selectionEnd = start + 4;
+          update();
+        }
+        
+        // 检测 ! + Ctrl 组合
+        if (e.key === '1' && e.shiftKey && e.ctrlKey) { // 感叹号的keyCode
+          e.preventDefault();
+          const currentTime = Date.now();
+          
+          // 检查是否是连续快速点击
+          if (currentTime - lastExclamationTime < TRIPLE_CLICK_THRESHOLD) {
+            exclamationCount++;
+            
+            // 三连击检测
+            if (exclamationCount >= 3) {
+              // 如果是在HTML编辑器中
+              if (this.id === 'editor-html' && this.value.trim() === '') {
+                this.value = createHtmlTemplate('tailwind'); // 使用 Tailwind 模板
+                update();
+              }
+              exclamationCount = 0; // 重置计数器
+            }
+          } else {
+            // 单击检测
+            exclamationCount = 1;
+            // 如果是在HTML编辑器中
+            if (this.id === 'editor-html' && this.value.trim() === '') {
+              this.value = createHtmlTemplate('basic'); // 使用基础模板
+              update();
+            }
+          }
+          lastExclamationTime = currentTime;
+        }
+      });
+    });
+
+    // 当窗口失去焦点时重置计数器
+    window.addEventListener('blur', () => {
+      exclamationCount = 0;
+      lastExclamationTime = 0;
+    });
   </script>
 </body>
 </html>
