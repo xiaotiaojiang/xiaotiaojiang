@@ -4,33 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML实时编辑器 - 支持代码高亮和Tailwind</title>
-    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
-    
     <!-- Prism CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" 
-          rel="stylesheet" 
-          crossorigin="anonymous" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" 
-          rel="stylesheet" 
-          crossorigin="anonymous" />
-    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" crossorigin="anonymous"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" crossorigin="anonymous"/>
     <style>
-        /* 编辑器样式 */
+        body { background-color: #18181b; }
         .editor-wrapper {
             position: relative;
-            height: calc(100% - 40px);
+            min-height: 200px;
+            max-height: 900px;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            height: 400px;
+            /* 初始高度，JS 会覆盖 */
         }
-        
-        /* 编辑器和高亮显示层的基础样式 */
-        #editor-html, #editor-css, #editor-js, 
+        .tab { cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.375rem 0.375rem 0 0; background-color: #27272a; color: #a1a1aa; transition: all 0.2s; }
+        .tab.active { background: #18181b; color: #fff; }
+        .editor-area { display: none; height: 100%; }
+        .editor-area.active { display: block; }
+        .action-button { background: #3b82f6; color: #fff; padding: 0.5rem 1rem; border-radius: 0.375rem; transition: all 0.2s; }
+        .action-button:hover { background: #2563eb; }
+        /* Prism 高亮层样式简化版 */
+        #editor-html, #editor-css, #editor-js,
         #highlightContent-html, #highlightContent-css, #highlightContent-js {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             font-family: 'Fira Code', monospace;
             font-size: 14px;
             line-height: 1.5;
@@ -42,8 +42,6 @@
             box-sizing: border-box;
             letter-spacing: normal;
         }
-        
-        /* 编辑器特定样式 */
         #editor-html, #editor-css, #editor-js {
             color: transparent;
             background: transparent;
@@ -52,396 +50,122 @@
             z-index: 2;
             -webkit-text-fill-color: transparent;
         }
-        
-        /* 高亮显示层特定样式 */
         #highlightContent-html, #highlightContent-css, #highlightContent-js {
             pointer-events: none;
             z-index: 1;
             background-color: #1e1e1e !important;
         }
-
-        /* 高亮代码块样式重置 */
-        #highlightContent-html code, 
-        #highlightContent-css code, 
-        #highlightContent-js code {
-            padding: 0 !important;
-            margin: 0 !important;
+        #highlightContent-html code, #highlightContent-css code, #highlightContent-js code {
             background: none !important;
             white-space: pre;
             display: block;
+            padding: 0 !important;
+            margin: 0 !important;
         }
-
-        /* 提高代码可见度的样式 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #2d2d2d; }
+        ::-webkit-scrollbar-thumb { background: #666; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #888; }
+        #editor-html::selection, #editor-css::selection, #editor-js::selection {
+            background: rgba(255,255,255,0.2);
+        }
         .token.tag { color: #ff99c8 !important; }
         .token.attr-name { color: #9fff9c !important; }
         .token.attr-value { color: #ffd93d !important; }
         .token.string { color: #87ceeb !important; }
         .token.comment { color: #6a9955 !important; }
         .token.doctype { color: #ff99c8 !important; }
-        
-        /* 自定义滚动条样式 */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+        /* 滑块样式 */
+        input[type=range].editor-height-slider {
+            height: 4px;
+            -webkit-appearance: none;
+            background: #404040;
+            border-radius: 2px;
+            outline: none;
         }
-        
-        ::-webkit-scrollbar-track {
-            background: #2d2d2d;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #666;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #888;
-        }
-
-        /* 选中文本的背景色 */
-        #editor-html::selection, #editor-css::selection, #editor-js::selection {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .tab {
+        input[type=range].editor-height-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; height: 16px;
+            background: #3b82f6;
+            border-radius: 50%;
             cursor: pointer;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem 0.375rem 0 0;
-            background-color: #374151;
-            color: #9ca3af;
             transition: all 0.2s;
         }
-
-        .tab.active {
-            background-color: #1e1e1e;
-            color: #ffffff;
+        input[type=range].editor-height-slider::-webkit-slider-thumb:hover {
+            background: #2563eb;
         }
-
-        .editor-area {
-            display: none;
-            height: 100%;
-        }
-
-        .editor-area.active {
-            display: block;
-        }
-
-        /* 按钮样式 */
-        .action-button {
-            background-color: #3b82f6;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            transition: all 0.2s;
-        }
-
-        .action-button:hover {
-            background-color: #2563eb;
-        }
-
-        /* 布局样式 */
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        .content-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .editor-container {
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 预览区布局优化 */
-        .preview-container {
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-            background-color: white;
-            overflow: hidden;
-        }
-
-        .preview-header {
-            padding: 1rem;
-            border-bottom: 1px solid #e5e7eb;
-            background-color: #f3f4f6;
-        }
-
-        .preview-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            padding: 1rem;
-            overflow-y: auto;
-            min-height: 0;
-            background-color: #ffffff;
-        }
-
-        .preview-frame-container {
-            position: relative;
-            width: 100%;
-            padding-top: 56.25%;
-            min-height: 0;
-            flex-shrink: 0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .preview-frame {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-            border-radius: 0.375rem;
-            background-color: white;
-        }
-
-        .chat-container {
-            position: relative;
-            flex: 1;
-            min-height: 300px;
-            height: 300px;
-            border-radius: 0.375rem;
-            overflow: hidden;
-            flex-shrink: 0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .chat-frame {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-    /* 按钮样式 */
-    .action-button {
-        background-color: #3b82f6;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        transition: all 0.2s;
-    }
-
-    .action-button:hover {
-        background-color: #2563eb;
-    }
-
-    /* 布局样式 */
-    .main-container {
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-    }
-
-    .content-container {
-        display: flex;
-        flex: 1;
-        overflow: hidden;
-    }
-
-    .editor-container {
-        width: 50%;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .preview-container {
-        width: 50%;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .preview-frame-container {
-        position: relative;
-        width: 100%;
-        padding-top: 56.25%; /* 16:9 比例 */
-    }
-
-    .preview-frame {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border: none;
-        border-radius: 0.375rem;
-    }
-
-    .chat-container {
-        flex: 1;
-        min-height: 300px;
-        border-radius: 0.375rem;
-        overflow: hidden;
-    }
-
-    /* 文本区域高度限制滑块样式 */
-    .editor-height-control {
-        width: 100%;
-        padding: 0.5rem;
-        background: #2d2d2d;
-        border-top: 1px solid #404040;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .editor-height-slider {
-        flex: 1;
-        height: 4px;
-        -webkit-appearance: none;
-        background: #404040;
-        border-radius: 2px;
-        outline: none;
-    }
-
-    .editor-height-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 16px;
-        height: 16px;
-        background: #3b82f6;
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .editor-height-slider::-webkit-slider-thumb:hover {
-        background: #2563eb;
-    }
-
-    .editor-height-value {
-        min-width: 4rem;
-        color: #9ca3af;
-        font-size: 0.875rem;
-    }
-</style>
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100">
-    <div class="main-container">
+<body class="bg-zinc-900 text-zinc-100 h-screen">
+    <div class="main-container flex flex-col h-screen">
         <!-- 顶部工具栏 -->
-        <div class="p-4 bg-gray-800 border-b border-gray-700">
-            <div class="container mx-auto flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-xl font-bold text-blue-400">HTML实时编辑器</h1>
-                    <button id="open-file" class="action-button">
-                        打开文件
-                    </button>
-                    <button id="save-file" class="action-button">
-                        保存文件
-                    </button>
-                </div>
-                <p class="text-gray-400">支持代码高亮和Tailwind CSS</p>
+        <div class="p-4 bg-zinc-800 border-b border-zinc-700 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold text-blue-400">HTML实时编辑器</h1>
+                <button id="open-file" class="action-button">打开文件</button>
+                <button id="save-file" class="action-button">保存文件</button>
             </div>
+            <p class="text-zinc-400">支持代码高亮和Tailwind CSS</p>
         </div>
 
-        <!-- 主要内容区域 -->
-        <div class="content-container">
-            <!-- 编辑区 -->
-            <div class="editor-container bg-gray-800 p-4">
-    <div class="flex space-x-2 mb-2">
-        <div class="tab active" data-tab="html">HTML</div>
-        <div class="tab" data-tab="css">CSS</div>
-        <div class="tab" data-tab="js">JavaScript</div>
-    </div>
-                
-                <div class="editor-wrapper rounded bg-[#1e1e1e]">
+        <!-- 主内容区域 上下结构 -->
+        <div class="content-container flex flex-col flex-1 overflow-hidden">
+            <!-- 编辑器区域 -->
+            <div class="editor-container bg-zinc-800 px-4 pt-4 pb-1" style="border-bottom:1px solid #27272a;">
+                <div class="flex space-x-2 mb-2">
+                    <div class="tab active" data-tab="html">HTML</div>
+                    <div class="tab" data-tab="css">CSS</div>
+                    <div class="tab" data-tab="js">JavaScript</div>
+                </div>
+                <div class="editor-wrapper bg-[#1e1e1e]">
                     <div id="html-area" class="editor-area active">
-                        <textarea id="editor-html" 
-    class="focus:outline-none" 
-    spellcheck="false"
-    autocomplete="off"
-    autocorrect="off"
-    autocapitalize="off"
-    wrap="off"
-></textarea>
+                        <textarea id="editor-html" class="focus:outline-none w-full h-full resize-none bg-transparent" spellcheck="false" autocomplete="off"></textarea>
                         <pre id="highlightContent-html" class="language-html"><code class="language-html"></code></pre>
                     </div>
-
                     <div id="css-area" class="editor-area">
-                        <textarea id="editor-css" class="focus:outline-none" spellcheck="false">/* 自定义样式 */
-body {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-h1 {
-    color: #4285f4;
-}
-
-button {
-    background-color: #4285f4;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #3367d6;
-}</textarea>
+                        <textarea id="editor-css" class="focus:outline-none w-full h-full resize-none bg-transparent" spellcheck="false"></textarea>
                         <pre id="highlightContent-css" class="language-css"><code class="language-css"></code></pre>
                     </div>
-
                     <div id="js-area" class="editor-area">
-                        <textarea id="editor-js" class="focus:outline-none" spellcheck="false">// 点击按钮事件
-document.getElementById('demo-btn').addEventListener('click', function() {
-    alert('按钮被点击了！');
-});</textarea>
+                        <textarea id="editor-js" class="focus:outline-none w-full h-full resize-none bg-transparent" spellcheck="false"></textarea>
                         <pre id="highlightContent-js" class="language-javascript"><code class="language-javascript"></code></pre>
                     </div>
                 </div>
-                    <div class="editor-height-control">
-        <span class="text-sm text-gray-400">编辑器高度:</span>
-        <input type="range" 
-               class="editor-height-slider" 
-               min="200" 
-               max="2000" 
-               value="500" 
-               id="editorHeightSlider">
-        <span class="editor-height-value" id="editorHeightValue">500px</span>
-    </div>
-
+                <div class="flex items-center gap-3 mt-2">
+                    <span class="text-sm text-zinc-400">编辑器高度:</span>
+                    <input type="range" min="200" max="900" value="400" id="editorHeightSlider" class="flex-1 h-2 rounded bg-zinc-700 accent-blue-500 editor-height-slider">
+                    <span id="editorHeightValue" class="text-sm text-zinc-400">400px</span>
+                </div>
             </div>
 
-            <!-- 预览区 -->
-<div class="preview-container">
-    <div class="preview-header">
-        <h2 id="previewTitle" class="text-xl font-semibold text-gray-800">预览区 - Tailwind示例</h2>
-    </div>
-    <div class="preview-content">
-        <div class="preview-frame-container">
-            <iframe id="preview" class="preview-frame"></iframe>
+            <!-- 预览+聊天区 横向排列 -->
+            <div class="flex-1 flex bg-zinc-100">
+                <!-- 预览区 -->
+                <div class="w-1/2 flex flex-col border-r border-zinc-200 bg-white">
+                    <div class="px-4 py-3 border-b border-zinc-200 bg-zinc-50">
+                        <h2 id="previewTitle" class="text-lg font-semibold text-zinc-800">预览区</h2>
+                    </div>
+                    <div class="flex-1 p-2">
+                        <iframe id="preview" class="w-full h-full rounded border"></iframe>
+                    </div>
+                </div>
+                <!-- 聊天区 -->
+                <div class="w-1/2 flex flex-col bg-white">
+                    <div class="px-4 py-3 border-b border-zinc-200 bg-zinc-50">
+                        <h2 class="text-lg font-semibold text-zinc-800">AI 聊天区</h2>
+                    </div>
+                    <div class="flex-1 p-2">
+                        <iframe src="https://chat.baidu.com/" class="w-full h-full rounded border"></iframe>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="chat-container">
-            <iframe src="https://chat.baidu.com/" class="chat-frame"></iframe>
-        </div>
     </div>
-</div>
-
-        </div>
-    </div>
-
-    <!-- Prism.js -->
+    <!-- Prism.js 和相关脚本 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-
     <script>
         const htmlEditor = document.getElementById('editor-html');
         const cssEditor = document.getElementById('editor-css');
@@ -456,36 +180,31 @@ document.getElementById('demo-btn').addEventListener('click', function() {
         const saveButton = document.getElementById('save-file');
         const openButton = document.getElementById('open-file');
 
-        // 添加防抖函数
+        // 防抖
         function debounce(func, wait) {
             let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
+            return function(...args) {
                 clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
+                timeout = setTimeout(() => func(...args), wait);
             };
         }
 
-        // 更新预览和代码高亮
+        // 更新预览和高亮
         const update = debounce(() => {
             try {
                 const htmlCode = htmlEditor.value;
                 const cssCode = cssEditor.value;
                 const jsCode = jsEditor.value;
-                
-                // 更新代码高亮
+
+                // Prism高亮
                 highlightHtml.textContent = htmlCode;
                 highlightCss.textContent = cssCode;
                 highlightJs.textContent = jsCode;
-                
                 Prism.highlightElement(highlightHtml);
                 Prism.highlightElement(highlightCss);
                 Prism.highlightElement(highlightJs);
-                
-                // 更新预览
+
+                // 预览 iframe
                 const previewDoc = preview.contentDocument || preview.contentWindow.document;
                 previewDoc.open();
                 previewDoc.write(`
@@ -501,84 +220,71 @@ document.getElementById('demo-btn').addEventListener('click', function() {
                     </html>
                 `);
                 previewDoc.close();
-                
-                // 更新预览区标题
+
+                // 预览标题
                 const titleMatch = htmlCode.match(/<title>(.*?)<\/title>/i);
                 const pageTitle = titleMatch ? titleMatch[1] : "未命名页面";
                 previewTitle.textContent = `预览区 - ${pageTitle}`;
-            } catch (error) {
-                console.error('更新预览时发生错误:', error);
+            } catch(e) {
+                console.error('预览更新错误:', e);
             }
         }, 300);
 
-        // 标签切换功能
+        // 标签切换
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                // 移除所有标签和编辑区的active类
                 tabs.forEach(t => t.classList.remove('active'));
                 editorAreas.forEach(area => area.classList.remove('active'));
-                
-                // 添加active类到当前标签和对应的编辑区
                 tab.classList.add('active');
-                const areaId = `${tab.getAttribute('data-tab')}-area`;
-                document.getElementById(areaId).classList.add('active');
+                document.getElementById(`${tab.getAttribute('data-tab')}-area`).classList.add('active');
             });
         });
 
-        // 保存文件功能
+        // 保存文件
         saveButton.addEventListener('click', () => {
             try {
                 const htmlBlob = new Blob([htmlEditor.value], { type: 'text/html' });
                 const cssBlob = new Blob([cssEditor.value], { type: 'text/css' });
                 const jsBlob = new Blob([jsEditor.value], { type: 'text/javascript' });
-                
-                // 创建下载链接并触发点击
+
                 const htmlLink = document.createElement('a');
                 htmlLink.href = URL.createObjectURL(htmlBlob);
                 htmlLink.download = 'index.html';
                 htmlLink.click();
-                
+
                 const cssLink = document.createElement('a');
                 cssLink.href = URL.createObjectURL(cssBlob);
                 cssLink.download = 'styles.css';
                 cssLink.click();
-                
+
                 const jsLink = document.createElement('a');
                 jsLink.href = URL.createObjectURL(jsBlob);
                 jsLink.download = 'script.js';
                 jsLink.click();
-            } catch (error) {
-                console.error('保存文件时发生错误:', error);
-                alert('保存文件失败，请重试');
+            } catch (e) {
+                alert('保存文件失败');
             }
         });
 
-        // 打开文件功能
+        // 打开文件
         openButton.addEventListener('click', () => {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.html,.css,.js';
             input.multiple = true;
-            
             input.onchange = async (e) => {
                 try {
                     for (const file of e.target.files) {
                         const text = await file.text();
-                        if (file.name.endsWith('.html')) {
-                            htmlEditor.value = text;
-                        } else if (file.name.endsWith('.css')) {
-                            cssEditor.value = text;
-                        } else if (file.name.endsWith('.js')) {
-                            jsEditor.value = text;
-                        }
+                        if (file.name.endsWith('.html')) htmlEditor.value = text;
+                        else if (file.name.endsWith('.css')) cssEditor.value = text;
+                        else if (file.name.endsWith('.js')) jsEditor.value = text;
                     }
                     update();
-                } catch (error) {
-                    console.error('读取文件时发生错误:', error);
-                    alert('读取文件失败，请重试');
+                } catch (e) {
+                    alert('读取文件失败');
                 }
             };
-            
             input.click();
         });
 
@@ -588,47 +294,22 @@ document.getElementById('demo-btn').addEventListener('click', function() {
             highlightContent.scrollTop = editor.scrollTop;
             highlightContent.scrollLeft = editor.scrollLeft;
         }
-
         [htmlEditor, cssEditor, jsEditor].forEach(editor => {
-            // 同步滚动
             editor.addEventListener('scroll', function() {
                 syncScroll(this);
             });
-
-            // 处理粘贴事件
             editor.addEventListener('paste', function(e) {
                 e.preventDefault();
                 const text = e.clipboardData.getData('text/plain');
                 document.execCommand('insertText', false, text);
             });
-
-            // 优化输入处理
             editor.addEventListener('input', function() {
                 requestAnimationFrame(() => {
                     syncScroll(this);
                     update();
                 });
             });
-        });
-
-        // 初始化编辑器状态
-        function initializeEditors() {
-            [htmlEditor, cssEditor, jsEditor].forEach(editor => {
-                syncScroll(editor);
-                update();
-            });
-        }
-
-        // 页面加载完成后初始化
-        window.addEventListener('load', initializeEditors);
-
-        // 事件监听
-        htmlEditor.addEventListener('input', update);
-        cssEditor.addEventListener('input', update);
-        jsEditor.addEventListener('input', update);
-        
-        // 处理Tab键
-        [htmlEditor, cssEditor, jsEditor].forEach(editor => {
+            // Tab键输入空格
             editor.addEventListener('keydown', function(e) {
                 if (e.key === 'Tab') {
                     e.preventDefault();
@@ -641,8 +322,26 @@ document.getElementById('demo-btn').addEventListener('click', function() {
             });
         });
 
+        // 编辑器高度滑块
+        const heightSlider = document.getElementById('editorHeightSlider');
+        const heightValue = document.getElementById('editorHeightValue');
+        const editorWrapper = document.querySelector('.editor-wrapper');
+
+        heightSlider.addEventListener('input', function() {
+            const height = this.value;
+            editorWrapper.style.height = `${height}px`;
+            heightValue.textContent = `${height}px`;
+        });
+        // 初始化高度
+        editorWrapper.style.height = `${heightSlider.value}px`;
+
         // 初始化
-        window.addEventListener('load', update);
+        window.addEventListener('load', () => {
+            [htmlEditor, cssEditor, jsEditor].forEach(editor => {
+                syncScroll(editor);
+            });
+            update();
+        });
 
         // 错误处理
         window.addEventListener('error', function(e) {
@@ -650,18 +349,6 @@ document.getElementById('demo-btn').addEventListener('click', function() {
                 console.error('CDN资源加载失败:', e);
             }
         }, true);
-            const heightSlider = document.getElementById('editorHeightSlider');
-    const heightValue = document.getElementById('editorHeightValue');
-    const editorWrapper = document.querySelector('.editor-wrapper');
-
-    heightSlider.addEventListener('input', function() {
-        const height = this.value;
-        editorWrapper.style.height = `${height}px`;
-        heightValue.textContent = `${height}px`;
-    });
-
-    // 初始化编辑器高度
-    editorWrapper.style.height = `${heightSlider.value}px`;
     </script>
 </body>
 </html>
